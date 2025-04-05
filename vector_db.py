@@ -5,7 +5,7 @@ import torch
 from chromadb.utils import embedding_functions
 
 SENTENCE_TRANSFORMER_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-CHROMA_PATH = "./chroma"
+CHROMA_PATH = "./.chroma"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def get_chromadb_collection(name: str):
