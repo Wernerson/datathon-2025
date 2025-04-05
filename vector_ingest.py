@@ -66,10 +66,11 @@ def store_chunks( files_in_folder, folder_path):
 
 def main():
     print(f"Using device {device}...")
+    path = r"C:\Users\semme\Desktop\data\hackathon_data"
+    print(path)
     folder_path = "./.data"
     files_in_folder = load_files(folder_path)
     store_chunks(files_in_folder, folder_path)
-
 
 if __name__ == "__main__":
         main()
