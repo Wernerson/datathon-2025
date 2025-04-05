@@ -1,10 +1,12 @@
-import torch
 import time
+
+import torch
 
 from ingestor import get_file_pbar
 from vector_db import get_chromadb_collection
 
-CHUNK_SIZE = 4096
+HALF_CHUNK = 2048
+MAX_BATCH_SIZE = 5461
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -13,7 +15,7 @@ def ingest():
     collection = get_chromadb_collection("my_collection")
     pbar = get_file_pbar()
     for filename, page_segments in pbar:
-        document_segments = []
+        document_chunks = []
         ids = []
         metadata = []
         for page in page_segments:
@@ -21,15 +23,20 @@ def ingest():
             page_id = page['pageID']
             url = page['url']
 
-            for i in range(0, len(content), CHUNK_SIZE):
-                segment = content[i: i + CHUNK_SIZE]
-                document_segments.append(segment)
+            pbar.set_description(f"Counting chunks in {filename}/{page_id}")
+            for i in range(0, len(content), HALF_CHUNK):
+                chunk = content[i : i + 2*HALF_CHUNK]
+                document_chunks.append(chunk)
                 ids.append(f"{filename}/{page_id}/chunk_{i}")
                 metadata.append({"url": url})
-        pbar.set_description(f"Ingesting {filename} of length {len(document_segments)}")
-        for i in range(0, len(document_segments), 5461):
-            collection.add(documents=document_segments[i: i + 5461], ids=ids[i: i + 5461],
-                           metadatas=metadata[i: i + 5461])
+
+        pbar.set_description(f"Ingesting {filename} of length {len(document_chunks)}")
+        for i in range(0, len(document_chunks), MAX_BATCH_SIZE):
+            collection.add(
+                documents=document_chunks[i: i + MAX_BATCH_SIZE],
+                ids=ids[i: i + MAX_BATCH_SIZE],
+                metadatas=metadata[i: i + MAX_BATCH_SIZE]
+            )
 
 
 def get_relevant_docs_vector(query, n_results=5):
