@@ -5,10 +5,11 @@ from datasketch import MinHash, MinHashLSH
 import mmh3
 from collections import OrderedDict
 import os
+from multiprocessing import Pool
 
-from ingest import segment_pages
-from ingest import load_documents
-from ingest import load_files
+from vector_ingest import segment_pages
+from vector_ingest import load_documents
+from vector_ingest import load_files
 
 
 
@@ -32,7 +33,10 @@ def dedupe_json_values(data, new_file_path, window_size=500,shift_size=250, thre
         raise ValueError("JSON data must be a dictionary")
 
     # Process the data
+    clean_start = time.time()
     cleaned_data_dict = dedupe_dict_values(data_dict, window_size,shift_size, threshold)
+    clean_end = time.time()
+    print(f"clean time: {clean_end - clean_start}")
     data['text_by_page_url'] = cleaned_data_dict
     # Save results
     save_json_data(data, new_file_path)
@@ -79,6 +83,32 @@ def dedupe_dict_values(data_dict, window_size=500, shift_size=250, threshold=0.9
 #     return ''.join(combined), value_positions
 
 
+def _remove_batch_duplicates(windows,duplicates,lsh,window_size):
+    for window_key, values in windows.items():
+        duplicates[window_key] = []
+        for pos, mh in values:
+            matches = lsh.query(mh)
+            if len(matches) > 1:
+                for key_match_pos in matches:
+                    match_key, match_pos = str(key_match_pos).split("^", 1)
+                    # print(f"key: {window_key}, match_key: {match_key}, pos: {pos}, match_pos: {match_pos}")
+                    match_pos = int(match_pos)  # Convert back to int
+                    if match_pos != pos:
+                        if match_key == window_key:  # Same document duplicate
+                            start = max(pos, match_pos)
+                            end = max(start, min(pos + window_size, match_pos + window_size))
+                        else:  # Cross-document duplicate
+                            start = pos
+                            end = pos + window_size
+
+                        # Add as tuple and avoid duplicates
+                        if (start, end) not in duplicates[window_key]:
+                            duplicates[window_key].append((start, end))
+
+                        # Sort immediately after collection
+                    duplicates[window_key].sort(key=lambda x: x[0])
+
+
 def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
     """Identifies duplicate windows across entire text"""
     lsh = MinHashLSH(threshold=threshold, num_perm=128)
@@ -86,7 +116,8 @@ def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
 
     duplicates = {}
     count_len = 0
-    max_thresh = 100000
+    max_thresh = 1000000
+    total_len = 0
 
     for key, text in data_dict.items():
         count_len+=len(text)
@@ -105,36 +136,17 @@ def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
             lsh.insert(key+"^"+str(i), mh)  # Use string as key
             windows[key].append((i, mh))
         if count_len > max_thresh:
-            # print(count_len)
+            total_len += count_len
+            print(f"{total_len} characters processed")
             count_len = 0
+        #
+        #     _remove_batch_duplicates(windows,duplicates,lsh,window_size)
+        #     lsh = MinHashLSH(threshold=threshold, num_perm=128)
+        #     windows = {}
+        #
+        #     duplicates = {}
+    _remove_batch_duplicates(windows, duplicates, lsh, window_size)
 
-    for window_key, values in windows.items():
-        duplicates[window_key] = []
-        for pos, mh in values:
-            matches = lsh.query(mh)
-            if len(matches) > 1:
-                for key_match_pos in matches:
-                    match_key, match_pos = str(key_match_pos).split("^", 1)
-                    # print(f"key: {window_key}, match_key: {match_key}, pos: {pos}, match_pos: {match_pos}")
-                    match_pos = int(match_pos)  # Convert back to int
-                    if match_pos != pos:
-                        if match_key == window_key:  # Same document duplicate
-                            start = max(pos, match_pos)
-                            end = max(start,min(pos + window_size, match_pos + window_size))
-                        else:  # Cross-document duplicate
-                            start = pos
-                            end = pos + window_size
-
-                        # Add as tuple and avoid duplicates
-                        if (start, end) not in duplicates[window_key]:
-                            duplicates[window_key].append((start, end))
-
-                        # Sort immediately after collection
-                    duplicates[window_key].sort(key=lambda x: x[0])
-    # lsh = MinHashLSH(threshold=threshold, num_perm=128)
-    # windows = {}
-    #
-    # duplicates = {}
     return duplicates
 
 
@@ -173,32 +185,38 @@ def _rebuild_dict(original_dict, duplicates_dict):
     return new_dict
 
 
-def main():
+def process_file(args):
+    filename, orig_file_path, new_file_path = args
+    if filename.endswith('.json'):
+        file_path = os.path.join(orig_file_path, filename)
+        doc = load_documents(file_path)
+        dedupe_json_values(
+            data=doc,
+            new_file_path=f"{new_file_path}/{filename}",
+            window_size=100,
+            shift_size=50,
+            threshold=0.8
+        )
+
+
+
+def main(parallel=False):
 
     orig_file_path = "./../data/hackathon_data"
     # orig_file_path = "./../data/test_data"
     new_file_path = "./../data/rd_data"
 
     files_in_folder = load_files(orig_file_path)
-    for file_index, filename in enumerate(files_in_folder[:1]):
-        if filename.endswith('.json'):
-            file_path = os.path.join(orig_file_path, filename)
-            doc = load_documents(file_path)
-            # print(doc)
-            dedupe_json_values(
-                data=doc,
-                new_file_path=f"{new_file_path}/{filename}",
-                window_size=100,  # Adjust based on your needs
-                shift_size=50,
-                threshold=0.8  # Lower = more aggressive deduplication
-            )
-            # for s in list(doc['text_by_page_url'].values()):
+    if parallel:
+        with Pool() as pool:
+            args = [(filename, orig_file_path, new_file_path) for filename in files_in_folder[:10]]
+            pool.map(process_file, args)
+    else:
+        for file_index, filename in enumerate(files_in_folder[:2]):
+            print(f"Processing {filename}...")
+            args = (filename,orig_file_path,new_file_path)
+            process_file(args)
 
-
-    # Run with your parameters
 
 if __name__ == "__main__":
-    start_time = time.time()
-    main()
-    end_time = time.time()
-    print(start_time- end_time)
+    main(parallel=True)
