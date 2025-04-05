@@ -35,22 +35,23 @@ def query(query):
     )
 
     context = []
-    relevant_docs = get_relevant_docs(query, n_results=3)
+    relevant_docs = get_relevant_docs(query, n_results=5)
     for i in range(len(relevant_docs["ids"][0])):
         id = relevant_docs["ids"][0][i]
         metadata = relevant_docs["metadatas"][0][i]
         file, doc_id, page_id, chunk_id = id.split("/")
+        print(file)
         document = get_document(file)
         text = document["text_by_page_url"][metadata["url"]]
         context.append(f"Excerpt from {metadata["url"]}:\n{text}")
 
-    response = client.responses.create(
-        model="gpt-4o-mini",
-        instructions="\n".join(context) + "\n" + INSTRUCTIONS,
-        input=query,
-    )
+    # response = client.responses.create(
+    #     model="gpt-4o-mini",
+    #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
+    #     input=query,
+    # )
 
-    print(response.output_text)
+    # print(response.output_text)
 
 
 def main():

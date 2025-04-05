@@ -5,6 +5,8 @@ from vector_db import get_chromadb_collection
 import os
 import json
 
+CHUNK_SIZE = 4096
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def load_files(folder_path):
@@ -34,7 +36,7 @@ def segment_pages(docs):
     return page_segment
 
 
-def store_chunks( files_in_folder, folder_path, chunk_size = 512):
+def store_chunks( files_in_folder, folder_path):
     collection = get_chromadb_collection("my_collection")
     no_files = len(files_in_folder)
     for file_index, filename in enumerate(files_in_folder[:5]):
@@ -51,8 +53,8 @@ def store_chunks( files_in_folder, folder_path, chunk_size = 512):
                 page_id = page['pageID']
                 url = page['url']
 
-                for i in range(0, len(content), chunk_size):
-                    segment = content[i: i + chunk_size]
+                for i in range(0, len(content), CHUNK_SIZE):
+                    segment = content[i: i + CHUNK_SIZE]
                     document_segments.append(segment)
                     ids.append(f"{filename}/{doc_id}/{page_id}/chunk_{i}")
                     metadata.append({"url": url})
@@ -66,7 +68,7 @@ def main():
     print(f"Using device {device}...")
     folder_path = "./.data"
     files_in_folder = load_files(folder_path)
-    store_chunks(files_in_folder, folder_path, chunk_size = 4096)
+    store_chunks(files_in_folder, folder_path)
 
 
 if __name__ == "__main__":
