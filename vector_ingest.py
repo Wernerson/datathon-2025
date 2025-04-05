@@ -31,7 +31,7 @@ def segment_pages(docs):
     i = 0
     page_segment = []
     for url, text in docs['text_by_page_url'].items():
-      page_segment.append({"docID": docs['doc_id'], "pageID": 'page_' + str(i), "url": url, "text": text})
+      page_segment.append({"pageID": 'page_' + str(i), "url": url, "text": text})
       i += 1
     return page_segment
 
@@ -39,7 +39,7 @@ def segment_pages(docs):
 def store_chunks( files_in_folder, folder_path):
     collection = get_chromadb_collection("my_collection")
     no_files = len(files_in_folder)
-    for file_index, filename in enumerate(files_in_folder[:5]):
+    for file_index, filename in enumerate(files_in_folder[:1000]):
         if filename.endswith('.json'):
             document_segments = []
             ids = []
@@ -49,14 +49,14 @@ def store_chunks( files_in_folder, folder_path):
             page_segments = segment_pages(doc)
             for page in page_segments:
                 content = page['text']
-                doc_id = page['docID']
+                # doc_id = page['docID']
                 page_id = page['pageID']
                 url = page['url']
 
                 for i in range(0, len(content), CHUNK_SIZE):
                     segment = content[i: i + CHUNK_SIZE]
                     document_segments.append(segment)
-                    ids.append(f"{filename}/{doc_id}/{page_id}/chunk_{i}")
+                    ids.append(f"{filename}/{page_id}/chunk_{i}")
                     metadata.append({"url": url})
             print(f"Ingesting {filename} ({file_index + 1}/{no_files}) of length {len(document_segments)}...")
             for i in range(0, len(document_segments), 5461):
@@ -66,10 +66,10 @@ def store_chunks( files_in_folder, folder_path):
 
 def main():
     print(f"Using device {device}...")
-    folder_path = "./.data"
+    folder_path = "./../data/hackathon_data_reduced"
     files_in_folder = load_files(folder_path)
     store_chunks(files_in_folder, folder_path)
 
 
 if __name__ == "__main__":
-        main()
+    main()

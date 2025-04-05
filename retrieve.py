@@ -6,6 +6,8 @@ from vector_db import get_chromadb_collection
 INSTRUCTIONS = """
     You are an AI assistant to a Supply Chain Director.
     Your task is to answer their question with the information provided above as accurately and precisely as possible.
+    Only use the context provided to you to answer the questions.
+    If the context does not provide the required information, respond with the fact that you are unable to answer the question with the provided context.
 """
 
 
@@ -19,7 +21,7 @@ def get_relevant_docs(query, n_results=5):
 
 
 def get_document(file_name):
-    json_file = f"./.data/{file_name}"
+    json_file = f"./../data/hackathon_data_reduced/{file_name}"
     with open(json_file, 'r', encoding="utf-8") as f:
         try:
             data = json.load(f)
@@ -39,7 +41,7 @@ def query(query):
     for i in range(len(relevant_docs["ids"][0])):
         id = relevant_docs["ids"][0][i]
         metadata = relevant_docs["metadatas"][0][i]
-        file, doc_id, page_id, chunk_id = id.split("/")
+        file, page_id, chunk_id = id.split("/")
         print(file)
         document = get_document(file)
         text = document["text_by_page_url"][metadata["url"]]
@@ -50,12 +52,12 @@ def query(query):
     #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
     #     input=query,
     # )
-
+    #
     # print(response.output_text)
 
 
 def main():
-    query("Name me companies in Pennsylvania that manufactures heat pipes.")
+    query("What company provides sound Reinforcement Solutions near Cleveland?")
 
 
 if __name__ == "__main__":
