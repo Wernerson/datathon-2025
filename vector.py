@@ -41,7 +41,7 @@ def get_relevant_docs_vector(query, n_results=5):
     for i in range(len(results["ids"][0])):
         id = results["ids"][0][i]
         metadata = results["metadatas"][0][i]
-        file, doc_id, page_id, chunk_id = id.split("/")
+        file, page_id, chunk_id = id.split("/")
         url = metadata["url"]
         yield file, url
 
