@@ -1,7 +1,7 @@
 import torch
 import time
 
-from ingestor import get_files
+from ingestor import get_file_pbar
 from vector_db import get_chromadb_collection
 
 CHUNK_SIZE = 4096
@@ -11,7 +11,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def ingest():
     collection = get_chromadb_collection("my_collection")
-    for filename, page_segments in get_files():
+    pbar = get_file_pbar()
+    for filename, page_segments in pbar:
         document_segments = []
         ids = []
         metadata = []
@@ -25,11 +26,10 @@ def ingest():
                 document_segments.append(segment)
                 ids.append(f"{filename}/{page_id}/chunk_{i}")
                 metadata.append({"url": url})
-        print(f"Ingesting {filename} of length {len(document_segments)}...")
+        pbar.set_description(f"Ingesting {filename} of length {len(document_segments)}")
         for i in range(0, len(document_segments), 5461):
             collection.add(documents=document_segments[i: i + 5461], ids=ids[i: i + 5461],
                            metadatas=metadata[i: i + 5461])
-        print(f"Ingested {filename}")
 
 
 def get_relevant_docs_vector(query, n_results=5):
@@ -47,7 +47,7 @@ def get_relevant_docs_vector(query, n_results=5):
 
 
 def main():
-    print(f"Using device {device}...")
+    print(f"Using device {device}.")
     print("Starting ingestion...")
     start = time.time()
     ingest()

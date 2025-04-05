@@ -1,5 +1,6 @@
 import os
 import json
+from tqdm import tqdm
 
 DATA_PATH = "./../data/hackathon_data_reduced"
 
@@ -31,11 +32,15 @@ def segment_pages(docs):
     return page_segment
 
 
-def get_files(no_of_files = 20):
-    files_in_folder = load_files(DATA_PATH)
-    for file_index, filename in enumerate(files_in_folder[:no_of_files]):
+def file_generator(files):
+    for file_index, filename in enumerate(files):
         if filename.endswith('.json'):
             file_path = os.path.join(DATA_PATH, filename)
             doc = load_document(file_path)
             page_segments = segment_pages(doc)
             yield filename, page_segments
+
+def get_file_pbar(no_of_files = 20):
+    files_in_folder = load_files(DATA_PATH)
+    files = files_in_folder[:no_of_files]
+    return tqdm(file_generator(files), total=len(files))
