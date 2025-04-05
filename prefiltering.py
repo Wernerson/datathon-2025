@@ -41,8 +41,8 @@ def process_file(input_file, output_folder):
             if not contains_binary_data(text):
                 # Parse the URL to separate the path from the query parameters
                 parsed_url = urllib.parse.urlparse(url)
-                # Check if the path does not end with .css or .js and does not contain "_jb_static"
-                if not parsed_url.path.endswith('.css') and not parsed_url.path.endswith('.js') and parsed_url.path.count("_jb_static") == 0:
+                # Check if the path does not end with .css or .js and does not contain "/_static/" and does not contain "_jb_static
+                if not parsed_url.path.endswith('.css') and not parsed_url.path.endswith('.js') and not parsed_url.path.endswith('.txt')and parsed_url.path.count("_jb_static") == 0 and parsed_url.path.count("/_static/") == 0 and parsed_url.path.count("Css") == 0:
                     filtered_data[url] = text
 
         # Define the output file path
@@ -87,8 +87,13 @@ def process_files_in_parallel(input_folder, output_folder):
 
 if __name__ == '__main__':
     # Define the input and output folders
-    input_folder = os.path.join("C:/Users/futon/Desktop/ETH/FS2025/Hackerthon/data/hackathon_data")
-    output_folder = os.path.join("C:/Users/futon/Desktop/ETH/FS2025/Hackerthon/filtered_data/hackathon_data")
+
+    bens_input_folder = "./../data/hackathon_data_reduced"
+    bens_output_folder = "./../filtered_data/hackathon_data_reduced"
+    # input_folder = os.path.join("C:/Users/futon/Desktop/ETH/FS2025/Hackerthon/data/hackathon_data")
+    # output_folder = os.path.join("C:/Users/futon/Desktop/ETH/FS2025/Hackerthon/filtered_data/hackathon_data")
+    input_folder = bens_input_folder
+    output_folder = bens_output_folder
 
     # Log the start of the processing
     logging.info(f"Starting file processing from {input_folder} to {output_folder}")
