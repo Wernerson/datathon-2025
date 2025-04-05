@@ -1,7 +1,9 @@
 import json
 from openai import OpenAI
 
-from vector_db import get_chromadb_collection
+from vector import get_relevant_docs_vector
+from tf_idf import get_relevant_docs_tfidf
+
 
 INSTRUCTIONS = """
     You are an AI assistant to a Supply Chain Director.
@@ -9,15 +11,6 @@ INSTRUCTIONS = """
     Only use the context provided to you to answer the questions.
     If the context does not provide the required information, respond with the fact that you are unable to answer the question with the provided context.
 """
-
-
-def get_relevant_docs(query, n_results=5):
-    collection = get_chromadb_collection("my_collection")
-    results = collection.query(
-        query_texts=[query],
-        n_results=n_results
-    )
-    return results
 
 
 def get_document(file_name):
@@ -36,28 +29,30 @@ def query(query):
         api_key="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",
     )
 
-    context = []
-    relevant_docs = get_relevant_docs(query, n_results=5)
-    for i in range(len(relevant_docs["ids"][0])):
-        id = relevant_docs["ids"][0][i]
-        metadata = relevant_docs["metadatas"][0][i]
-        file, page_id, chunk_id = id.split("/")
-        print(file)
-        document = get_document(file)
-        text = document["text_by_page_url"][metadata["url"]]
-        context.append(f"Excerpt from {metadata["url"]}:\n{text}")
+    relevant_docs = set()
+    for doc in get_relevant_docs_vector(query, n_results=5):
+        relevant_docs.add(doc)
 
+    for doc in get_relevant_docs_tfidf(query, n_results=5):
+        relevant_docs.add(doc)
+
+    context = []
+    for file, url in relevant_docs:
+        document = get_document(file)
+        text = document["text_by_page_url"][url]
+        context.append(f"Excerpt from {url}:\n{text}")
+
+    print(len(context))
     # response = client.responses.create(
     #     model="gpt-4o-mini",
     #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
     #     input=query,
     # )
-    #
-    # print(response.output_text)
+    # return response.output_text
 
 
 def main():
-    query("What company provides sound Reinforcement Solutions near Cleveland?")
+    print(query("What company provides sound Reinforcement Solutions near Cleveland?"))
 
 
 if __name__ == "__main__":

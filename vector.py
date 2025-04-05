@@ -64,6 +64,19 @@ def store_chunks( files_in_folder, folder_path):
             print(f"Ingested {filename} ({file_index+1}/{no_files})")
 
 
+def get_relevant_docs_vector(query, n_results=5):
+    collection = get_chromadb_collection("my_collection")
+    results = collection.query(
+        query_texts=[query],
+        n_results=n_results
+    )
+    for i in range(len(results["ids"][0])):
+        id = results["ids"][0][i]
+        metadata = results["metadatas"][0][i]
+        file, doc_id, page_id, chunk_id = id.split("/")
+        url = metadata["url"]
+        yield file, url
+
 def main():
     print(f"Using device {device}...")
     folder_path = "./../data/hackathon_data_reduced"
