@@ -1,5 +1,4 @@
 import os
-import json
 import time
 import errno
 
@@ -12,8 +11,9 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
 
+from ingestor import get_files
+
 schema = Schema(
-    docId=ID(stored=True),
     url=ID(stored=True),
     file=ID(stored=True),
     content=TEXT(analyzer=StemmingAnalyzer())
@@ -34,34 +34,7 @@ def make_sure_path_exists(path):
         if exception.errno != errno.EEXIST:
             raise
 
-def load_files(folder_path):
-    files_in_folder = os.listdir(folder_path)
-    len(files_in_folder)
-    return files_in_folder
-
-
-def load_documents(json_file):
-    """Loads the JSON file."""
-    with open(json_file, 'r', encoding="utf-8") as f:
-      try:
-          data = json.load(f)
-          return data
-      except json.JSONDecodeError:
-          print(f"Error reading {json_file}, it may not be a valid JSON file.")
-    return []
-
-
-def segment_pages(docs):
-    """You may prefer to load each page separately."""
-    i = 0
-    page_segment = []
-    for url, text in docs['text_by_page_url'].items():
-      page_segment.append({"docID": docs['doc_id'], "pageID": 'page_' + str(i), "url": url, "text": text})
-      i += 1
-    return page_segment
-
-
-def ingest(files_in_folder, folder_path):
+def ingest():
     nltk.download('stopwords')
     nltk.download('punkt')
     nltk.download('punkt_tab')
@@ -69,19 +42,13 @@ def ingest(files_in_folder, folder_path):
     make_sure_path_exists("./.whoosh")
     ix = create_in("./.whoosh", schema)
     writer = ix.writer()
-    no_files = len(files_in_folder)
-    for file_index, filename in enumerate(files_in_folder[:20]):
-        if filename.endswith('.json'):
-            file_path = os.path.join(folder_path, filename)
-            doc = load_documents(file_path)
-            page_segments = segment_pages(doc)
-            print(f"Ingesting {filename} ({file_index + 1}/{no_files}) of length {len(page_segments)}...")
-            for page in page_segments:
-                content = page['text']
-                doc_id = page['docID']
-                url = page['url']
-                writer.add_document(docId=doc_id, url=url, file=filename, content=content)
-            print(f"Ingested {filename} ({file_index+1}/{no_files})")
+    for filename, page_segments in get_files():
+        print(f"Ingesting {filename} with {len(page_segments)} page segments...")
+        for page in page_segments:
+            content = page['text']
+            url = page['url']
+            writer.add_document(url=url, file=filename, content=content)
+        print(f"Ingested {filename}.")
     writer.commit()
 
 
@@ -96,16 +63,11 @@ def get_relevant_docs_tfidf(query, n_results=5):
 
 
 def main():
-    folder_path = "./.data"
-    files_in_folder = load_files(folder_path)
-
     print("Starting ingestion...")
     start = time.time()
-    ingest(files_in_folder, folder_path)
+    ingest()
     end = time.time()
     print(f"Ingestion complete! Took {end - start:.2f} seconds.")
-
-    print(get_relevant_docs_tfidf("Name me companies in Pennsylvania that manufactures heat pipes."))
 
 if __name__ == "__main__":
         main()
