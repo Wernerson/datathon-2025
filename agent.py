@@ -1,5 +1,4 @@
 from openai import OpenAI
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import retrieve
 
@@ -81,20 +80,11 @@ def prompt_agent(
     context_documents = ""
     relevant_urls = []
 
-    def check_and_collect(db_response):
-        url, content = db_response
-        if is_relevant_document(content, user_query, client):
-            return url, content
-        return None
-
-    with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(check_and_collect, db_response) for db_response in db_responses]
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                url, content = result
-                context_documents += content
-                relevant_urls.append(url)
+    # print("filtering responses")
+    for db_response in db_responses:
+        if is_relevant_document(db_response[1], user_query, client):
+            context_documents += db_response[1]
+            relevant_urls.append(db_response[0])
 
     context_start = "This is the start of the context, $CONTEXT$: "
 
