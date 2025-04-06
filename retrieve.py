@@ -57,20 +57,28 @@ def query(query):
     # return response.output_text
 
 
-def query_with_sources(query):
+def query_with_sources(
+        query: str,
+        use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False,
+        strict: bool = False,
+        conversation: list[str] = []
+):
     client = OpenAI(
         api_key="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",
     )
 
     relevant_docs = set()
-    for doc in get_relevant_docs_vector(query, n_results=1):
-        relevant_docs.add(doc)
+    if use_vector:
+        for doc in get_relevant_docs_vector(query, n_results=1):
+            relevant_docs.add(doc)
 
-    for doc in get_relevant_docs_tfidf(query, n_results=1):
-        relevant_docs.add(doc)
+    if use_tfidf:
+        for doc in get_relevant_docs_tfidf(query, n_results=1):
+            relevant_docs.add(doc)
 
-    # for doc in get_relevant_docs_ner(query, n_results=1):
-    #     relevant_docs.add(doc)
+    if use_ner:
+        for doc in get_relevant_docs_ner(query, n_results=1):
+            relevant_docs.add(doc)
 
     # context = []
     # for file, url in relevant_docs:
@@ -84,12 +92,12 @@ def query_with_sources(query):
     #     input=query,
     # )
     # return response.output_text
+    print(conversation)
     response_text = "This is a response text..."
     return {
         "text": response_text,
         "sources": [url for _, url in relevant_docs]
     }
-
 
 
 def main():

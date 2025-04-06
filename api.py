@@ -9,7 +9,12 @@ app = FastAPI()
 
 
 class Query(BaseModel):
+    conversation: list[str] = [] # previous exchanges
     text: str
+    vector: bool = True
+    inverted: bool = True
+    named: bool = False
+    strict: bool = False
 
 
 @app.get("/")
@@ -19,7 +24,14 @@ def read_root():
 
 @app.post("/api/predict")
 def predict(query: Query):
-    return query_with_sources(query.text)
+    return query_with_sources(
+        query=query.text,
+        use_vector=query.vector,
+        use_tfidf=query.inverted,
+        use_ner=query.named,
+        strict=query.strict,
+        conversation=query.conversation
+    )
 
 
 if __name__ == "__main__":
