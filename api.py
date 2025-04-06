@@ -3,8 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from retrieve import query_with_sources
-
+from agent import prompt_agent
 app = FastAPI()
 
 
@@ -24,12 +23,12 @@ def read_root():
 
 @app.post("/api/predict")
 def predict(query: Query):
-    return query_with_sources(
-        query=query.text,
+    return prompt_agent(
+        user_query=query.text,
         use_vector=query.vector,
         use_tfidf=query.inverted,
         use_ner=query.named,
-        strict=query.strict,
+        strict_reg=query.strict,
         conversation=query.conversation
     )
 
