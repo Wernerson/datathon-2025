@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Gieni by Bayes Brigade</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="description" content=""/>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+<div id="app" class="flex flex-col h-screen w-3/4 mx-auto">
+    <!-- Header -->
+    <header class="bg-gray-800 text-white p-4">
+        <h1 class="text-lg font-semibold text-center">Gieni by Bayes Brigade</h1>
+    </header>
+
+    <!-- Chat Area -->
+    <main id="chat-area" class="flex-1 overflow-y-auto p-4 space-y-4 bg-white">
+
+        <!-- Message: User -->
+        <div v-for="msg in messages" class="flex items-start space-x-2" :class="{ 'justify-end': !msg.ai }">
+            <div class="px-4 py-2 rounded-lg max-w-xs"
+                 :class="{ 'bg-blue-500 text-white': !msg.ai, 'bg-gray-200': msg.ai }">
+                <p>{{ msg.text }}</p>
+                <a v-for="src in msg.sources"
+                   href="{{src.href}}"
+                   download="{{src.name}}"
+                   class="mt-2 inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none text-center"
+                >
+                    {{src.name}}
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Input Area -->
+    <div class="bg-gray-200 p-4">
+        <form class="flex items-center space-x-2" action="#">
+            <input
+                    v-model="query"
+                    type="text"
+                    placeholder="Type your message..."
+                    class="flex-1 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+            <button
+                    @click="sendQuery"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none"
+            >
+                Send
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const {createApp, ref} = Vue
+
+    createApp({
+        setup() {
+            const query = ref("")
+            const messages = ref([
+                {ai: true, text: "Hello! How can I assist you today?"},
+                {ai: false, text: "Tell me about aluminum manufacturing companies in southern Italy."},
+                {
+                    ai: true, text: "Of course, here is a list of them:", sources: [
+                        {href: "/path-to-your-file/example-file.pdf", name: "example-file.pdf"}
+                    ]
+                },
+            ])
+
+            const sendQuery = () => {
+                messages.value.push({ai: true, text: query.value})
+                query.value = ""
+            }
+            return {
+                messages,
+                query,
+                sendQuery
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+</html>
