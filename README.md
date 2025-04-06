@@ -4,7 +4,7 @@
 
 > Checkout the live preview on [go.snb.li/datathon](go.snb.li/datathon)
 
-See [Report](./report.pdf) and [Slides](./slides.pdf).
+See [Report](./report.pdf), [Slides](./slides.pdf) and [Video](./cut_waiting_time_video.mp4).
 
 ## Install dependencies
 
