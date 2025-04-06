@@ -40,7 +40,7 @@ def file_generator(files):
             page_segments = segment_pages(doc)
             yield filename, page_segments
 
-def get_file_pbar(no_of_files = 20):
+def get_file_pbar(start_files = 0,end_files = 20):
     files_in_folder = load_files(DATA_PATH)
-    files = files_in_folder[:no_of_files]
+    files = files_in_folder[start_files:end_files]
     return tqdm(file_generator(files), total=len(files))
