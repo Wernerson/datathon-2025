@@ -3,6 +3,7 @@ from openai import OpenAI
 
 from vector import get_relevant_docs_vector
 from tf_idf import get_relevant_docs_tfidf
+from named_entity_recognition import get_relevant_docs_ner
 
 
 INSTRUCTIONS = """
@@ -36,13 +37,18 @@ def query(query):
     for doc in get_relevant_docs_tfidf(query, n_results=5):
         relevant_docs.add(doc)
 
+    for doc in get_relevant_docs_ner(query, n_results=5):
+        relevant_docs.add(doc)
+
     context = []
     for file, url in relevant_docs:
         document = get_document(file)
         text = document["text_by_page_url"][url]
         context.append(f"Excerpt from {url}:\n{text}")
 
-    print(len(context))
+    return context
+
+    # print(len(context))
     # response = client.responses.create(
     #     model="gpt-4o-mini",
     #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
@@ -51,8 +57,45 @@ def query(query):
     # return response.output_text
 
 
+def query_with_sources(query):
+    client = OpenAI(
+        api_key="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",
+    )
+
+    relevant_docs = set()
+    for doc in get_relevant_docs_vector(query, n_results=1):
+        relevant_docs.add(doc)
+
+    for doc in get_relevant_docs_tfidf(query, n_results=1):
+        relevant_docs.add(doc)
+
+    # for doc in get_relevant_docs_ner(query, n_results=1):
+    #     relevant_docs.add(doc)
+
+    # context = []
+    # for file, url in relevant_docs:
+    #     document = get_document(file)
+    #     text = document["text_by_page_url"][url]
+    #     context.append(f"Excerpt from {url}:\n{text}")
+
+    # response = client.responses.create(
+    #     model="gpt-4o-mini",
+    #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
+    #     input=query,
+    # )
+    # return response.output_text
+    response_text = "This is a response text..."
+    return {
+        "text": response_text,
+        "sources": [url for _, url in relevant_docs]
+    }
+
+
+
 def main():
     print(query("What company provides sound Reinforcement Solutions near Cleveland?"))
+    print(query("What company creates heat pumps in Pennsylvania?"))
+    print(query("Are there aluminum auto manufacturers in southern Italy?"))
 
 
 if __name__ == "__main__":
