@@ -13,7 +13,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def ingest():
     collection = get_chromadb_collection("my_collection")
-    pbar = get_file_pbar(start_files = 8600, end_files=-1)
+    pbar = get_file_pbar()
     for filename, page_segments in pbar:
         document_chunks = []
         ids = []

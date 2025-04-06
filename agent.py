@@ -50,7 +50,6 @@ def is_valid_answer(answer, prompt, client):
 def prompt_agent(
         user_query, strict_reg=True,
         use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False,
-        strict: bool = False,
         conversation: list[str] = []
 ):
     api_key = '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'
@@ -149,8 +148,12 @@ def prompt_agent(
 
 def main():
     user_query = "What company provides assisted living near Richmond, Virginia?"
-    agent_response = prompt_agent(user_query, False)
+    agent_response = prompt_agent(
+        user_query,
+        strict_reg=False
+    )
 
+    print("RESPONSE & RELEVANT SOURCES:")
     print(agent_response)
 
 

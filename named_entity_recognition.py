@@ -88,7 +88,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    con = sqlite3.connect("./.sqlite.db")
-    cur = con.cursor()
-    cur.execute("SELECT * FROM entities where type = 'LOC'")
-    print(cur.fetchall())
