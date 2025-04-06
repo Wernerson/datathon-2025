@@ -9,6 +9,7 @@ app = FastAPI()
 
 
 class Query(BaseModel):
+    conversation: list[str] = [] # previous exchanges
     text: str
     vector: bool = True
     inverted: bool = True
@@ -28,7 +29,8 @@ def predict(query: Query):
         use_vector=query.vector,
         use_tfidf=query.inverted,
         use_ner=query.named,
-        strict=query.strict
+        strict=query.strict,
+        conversation=query.conversation
     )
 
 

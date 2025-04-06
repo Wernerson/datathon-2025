@@ -115,8 +115,10 @@
             const named = ref(false)
             const strict = ref(false)
 
+            const mapMsg = msg => `${msg.ai ? "AI" : "User"}: ${msg.text}`
             const sendQuery = async () => {
                 const text = query.value
+                const conversation = messages.value.map(mapMsg)
                 messages.value.push({ai: false, text})
                 query.value = ""
                 thinking.value = true
@@ -125,7 +127,7 @@
                         method: "POST",
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
-                            text,
+                            text, conversation,
                             vector: vector.value,
                             inverted: inverted.value,
                             named: named.value,

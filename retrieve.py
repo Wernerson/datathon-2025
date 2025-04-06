@@ -58,13 +58,14 @@ def query(query):
 
 
 def query_with_sources(
-        query: str, use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False, strict: bool = False
+        query: str,
+        use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False,
+        strict: bool = False,
+        conversation: list[str] = []
 ):
     client = OpenAI(
         api_key="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",
     )
-
-    print(use_vector, use_tfidf, use_ner, strict)
 
     relevant_docs = set()
     if use_vector:
@@ -91,12 +92,12 @@ def query_with_sources(
     #     input=query,
     # )
     # return response.output_text
+    print(conversation)
     response_text = "This is a response text..."
     return {
         "text": response_text,
         "sources": [url for _, url in relevant_docs]
     }
-
 
 
 def main():
