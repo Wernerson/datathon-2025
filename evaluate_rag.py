@@ -1,5 +1,5 @@
 # Query and Ground truth pairs including link
-qa_dict = {
+evaluation_dict = {
     1: {
         "query": "What are the assisted living private rooms at covenantwood equipped with?",
         "link": "https://covenantwoods.com/health-services/assisted-living/",
@@ -66,3 +66,21 @@ qa_dict = {
         "answer":"amsfulfillment.com (and others possible)"
     }
 }
+
+import retrieve, agent
+
+def evaluate():
+    for key, value in evaluation_dict:
+        query = value['query']
+        link =value['link']
+        answer = value['answer']
+
+        db_responses = retrieve.query(query)
+        print(db_responses)
+
+        response = agent.prompt_agent(query, strict_reg=True)
+
+        print(f"User query: {query}")
+        print(f"Retrieved Documents {db_responses}")
+        print(f"Ground Truth example {answer}")
+        print(f"Strict RAG answer {response}")
