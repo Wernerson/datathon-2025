@@ -3,6 +3,7 @@ from openai import OpenAI
 
 from vector import get_relevant_docs_vector
 from tf_idf import get_relevant_docs_tfidf
+from named_entity_recognition import get_relevant_docs_ner
 
 
 INSTRUCTIONS = """
@@ -34,6 +35,9 @@ def query(query):
         relevant_docs.add(doc)
 
     for doc in get_relevant_docs_tfidf(query, n_results=5):
+        relevant_docs.add(doc)
+
+    for doc in get_relevant_docs_ner(query, n_results=5):
         relevant_docs.add(doc)
 
     context = []
