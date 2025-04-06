@@ -31,7 +31,7 @@ def query(query):
     )
 
     relevant_docs = set()
-    for doc in get_relevant_docs_vector(query, n_results=5):
+    for doc in get_relevant_docs_vector(query, n_results=10):
         relevant_docs.add(doc)
 
     for doc in get_relevant_docs_tfidf(query, n_results=5):
