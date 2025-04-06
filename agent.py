@@ -1,30 +1,29 @@
-import retrieve
-
-import openai
 from openai import OpenAI
 
+import retrieve
+
 num_used_tokens = 0
+
 
 def is_relevant_document(document, user_query, client):
     is_relevant_critic_prompt = document + "You are a critic that has to decide whether the document above is relevant for the following question, answer with exactly one word, (Accept) if the document above is relevant to answer the question, or (Reject), if the document is not useful to answer the question. Question: " + user_query + " Answer: ("
     response = client.responses.create(
         model="gpt-4o-mini",
-        input = is_relevant_critic_prompt
+        input=is_relevant_critic_prompt
     )
 
     global num_used_tokens
     num_used_tokens += response.usage.total_tokens
 
-    #print(response)
+    # print(response)
 
-    if(response.output_text.count("Accept") != 0):
+    if (response.output_text.count("Accept") != 0):
         return True
-    elif(response.output_text.count("Reject") != 0):
+    elif (response.output_text.count("Reject") != 0):
         return False
     else:
-        #print("relevance critic provided invalid answer")
+        # print("relevance critic provided invalid answer")
         return False
-
 
 
 def is_valid_answer(answer, prompt, client):
@@ -44,18 +43,19 @@ def is_valid_answer(answer, prompt, client):
     elif (response.output_text.count("Reject") != 0):
         return False
     else:
-        #print("validity critic provided invalid answer")
+        # print("validity critic provided invalid answer")
         return False
 
 
-def prompt_agent(user_query, strict_reg=True, conversation_history = ""):
+def prompt_agent(
+        user_query, strict_reg=True,
+        use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False,
+        strict: bool = False,
+        conversation: list[str] = []
+):
     api_key = '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'
-
     client = OpenAI(api_key=api_key)
-
-    #print("querying db")
-    #TODO: rewrite querry dependent on the conversation history
-
+    conversation_history = "\n".join(conversation)
     query_rewrite_prompt = "Conversation history: " + conversation_history + " Task: given the provided conversation history provided above, please rewrite the following user query in a way so that it is more likely to allow a Vectorized Database system to find the information the user wants to find. User query: " + user_query + " New Query: "
 
     query_rewrite_response = client.responses.create(
@@ -67,24 +67,26 @@ def prompt_agent(user_query, strict_reg=True, conversation_history = ""):
     num_used_tokens += query_rewrite_response.usage.total_tokens
 
     print(query_rewrite_response.output)
-    db_responses = retrieve.query(query_rewrite_response.output_text)
+    db_responses = retrieve.query_with_sources(
+        query=query_rewrite_response.output_text,
+        use_vector=use_vector, use_tfidf=use_tfidf, use_ner=use_ner,
+    )
 
     filtered_db_responses = []
     for i in range(len(db_responses)):
-        if len(db_responses[i]) > 10000:
-            db_responses[i] = db_responses[i][:10000]
-
-
-
-
+        if len(db_responses[i][1]) > 10000:
+            db_responses[i][1] = db_responses[i][1][:10000]
 
     # filter LLM
     context_documents = ""
 
-    #print("filtering responses")
+    relevant_urls = []
+
+    # print("filtering responses")
     for db_response in db_responses:
-        if is_relevant_document(db_response, user_query, client):
-            context_documents += db_response
+        if is_relevant_document(db_response[1 ], user_query, client):
+            context_documents += db_response[1]
+            relevant_urls.append(db_response[0])
 
     context_start = "This is the start of the context, $CONTEXT$: "
 
@@ -131,7 +133,6 @@ def prompt_agent(user_query, strict_reg=True, conversation_history = ""):
     else:
         reporter_prompt = valid_responses + " Based on the potentially multiple answers above to the following question, create a well formulated answer containing all the pieces of information provided in the valid answers above. If the critic specified that the data may be inaccurate or not inferrable please specifically add the information that this specific part of the information is not exclusively based on database information, and spell out which parts of the information are subject to this warning. If the critic was fine with the data just answer the question. Please be brief and avoid redundant information. Question: " + user_query + "Final Answer: "
 
-
     reporter_response = client.responses.create(
         model="gpt-4o-mini",
         input=reporter_prompt
@@ -140,8 +141,10 @@ def prompt_agent(user_query, strict_reg=True, conversation_history = ""):
     num_used_tokens += reporter_response.usage.total_tokens
 
     print(num_used_tokens)
-    return reporter_response.output_text
-
+    return {
+        "text": reporter_response.output_text,
+        "sources": relevant_urls
+    }
 
 
 def main():
@@ -149,6 +152,7 @@ def main():
     agent_response = prompt_agent(user_query, False)
 
     print(agent_response)
+
 
 if __name__ == "__main__":
     main()
