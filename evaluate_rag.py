@@ -49,5 +49,20 @@ qa_dict = {
         "query": "What classes of ships does American Cruise Lines have on offer?",
         "link": "https://www.americancruiselines.com/usa-riverboat-cruise-ships",
         "answer":" Patriot Class, Coastal Cats, Classic Paddlewheelers, Constellation Class Ships, Independence Class, and the only modern American Riverboats."
+    },
+    10:{
+        "query":"What is the bicoastal warehouse capacity of amsfulfillment?",
+        "link": "https://www.amsfulfillment.com/",
+        "answer":"over 1-million sqft of bi-coastal warehousing capacity (Delaware, Pennsylvania, California)"
+    },
+    11:{
+        "query":"What industries does amsfulfillment serve?",
+        "link": "https://www.amsfulfillment.com/industries-served/",
+        "answer":"Beauty products, Apparel, Fashion Accessories, Household goods, Supplement & Vitamins, Electronics, Books, Pet, and toys"
+    },
+    12:{
+        "query":"What fulfillment companies in the toy industry are located in Valencia California?",
+        "link": "https://www.amsfulfillment.com/locations/",
+        "answer":"amsfulfillment.com (and others possible)"
     }
 }
