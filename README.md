@@ -4,6 +4,8 @@
 
 > Checkout the live preview on [go.snb.li/datathon](go.snb.li/datathon)
 
+See [Report](./report.pdf) and [Slides](./slides.pdf).
+
 ## Install dependencies
 
 `pip install -r ./requirements.txt`
