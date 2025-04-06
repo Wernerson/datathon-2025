@@ -55,7 +55,7 @@ def prompt_agent(
     api_key = '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'
     client = OpenAI(api_key=api_key)
     conversation_history = "\n".join(conversation)
-    query_rewrite_prompt = "Conversation history: " + conversation_history + " Task: given the provided conversation history provided above, please rewrite the following user query in a way so that it is more likely to allow a Vectorized Database system to find the information the user wants to find. User query: " + user_query + " New Query: "
+    query_rewrite_prompt = "Conversation history: " + conversation_history + " Task: given the provided conversation history provided above, please adapt the following user query in a way so that it is more likely to allow a Vectorized Database system to find the information the user wants to find with this current query, please change the new user query as little as possible. User query: " + user_query + " New Query: "
 
     query_rewrite_response = client.responses.create(
         model="gpt-4o-mini",
@@ -78,7 +78,6 @@ def prompt_agent(
 
     # filter LLM
     context_documents = ""
-
     relevant_urls = []
 
     # print("filtering responses")
