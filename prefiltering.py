@@ -4,6 +4,8 @@ import urllib.parse
 import logging
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
+import bleach
+# from bs4 import BeautifulSoup
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -42,7 +44,7 @@ def process_file(input_file, output_folder):
                 # Parse the URL to separate the path from the query parameters
                 parsed_url = urllib.parse.urlparse(url)
                 # Check if the path does not end with .css or .js and does not contain "/_static/" and does not contain "_jb_static
-                if not parsed_url.path.endswith('.css') and not parsed_url.path.endswith('.js') and not parsed_url.path.endswith('.txt')and parsed_url.path.count("_jb_static") == 0 and parsed_url.path.count("/_static/") == 0 and parsed_url.path.count("Css") == 0:
+                if not parsed_url.path.endswith('.css') and not parsed_url.path.endswith('.js') and not parsed_url.path.endswith('.txt')and parsed_url.path.count("_jb_static") == 0 and parsed_url.path.count("/_static/") == 0 and parsed_url.path.count("css") == 0:
                     filtered_data[url] = text
 
         # Define the output file path
