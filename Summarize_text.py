@@ -1,0 +1,55 @@
+import spacy
+from spacy.util import minibatch
+
+# Load spaCy model with GPU support
+nlp = spacy.load("en_core_web_trf")  # Use transformer-based model for better accuracy
+# Ensure that spaCy uses GPU if available
+if spacy.prefer_gpu():
+    print("Using GPU for processing...")
+else:
+    print("GPU not found, falling back to CPU.")
+
+
+# Function to perform summarization using spaCy
+def summarize_with_spacy(text, num_sentences=3):
+    doc = nlp(text)
+
+    # Extract sentences and rank them by their length as a simple heuristic for importance
+    sentences = [sent.text for sent in doc.sents]
+
+    # Sort sentences by length (or other heuristic)
+    sentences = sorted(sentences, key=lambda s: len(s), reverse=True)
+
+    # Return the top 'num_sentences' based on the sorted sentences
+    return ' '.join(sentences[:num_sentences])
+
+
+# Function to process multiple documents in parallel (GPU/CPU)
+def parallel_summarize(texts, num_sentences=3, batch_size=16, n_process=4):
+    summaries = []
+
+    # Process texts in batches
+    for batch in minibatch(texts, size=batch_size):
+        # Process each document in the batch
+        for doc in nlp.pipe(batch, batch_size=batch_size, n_process=n_process):
+            # Perform summarization for each document
+            summary = summarize_with_spacy(doc.text, num_sentences)
+            summaries.append(summary)
+
+    return summaries
+
+
+# Example: List of large text documents
+texts = [
+    "Your first large corpus of text goes here...",
+    "Your second large corpus of text goes here...",
+    "Premier Custom Thermal Management Solutions Company - ACT\n|\nADVANCED COOLING TECHNOLOGIES\ncontact\nThermal Solutions\nPassive Thermal Solutions\nHeat Pipes\nHiK Plates­™/ Heat Pipe Assemblies\nPulsating Heat Pipes\nVapor Chambers\nHigh Temperature Heat Pipes\nLoop Thermosyphons\nPhase Change Based Solutions\nPCM Heat Sinks\nCustom Cold Plates\nActive Thermal Management Solutions\nLiquid Cooling\nPumped Two-Phase\nLiquid-Air HX\nTekgard® ECUs\nVaphtek™ ECU\nTekgard® Chillers\nEmbedded Computing Solutions\nICE-Lok®\nVME/ VPX Card Frames\nConduction Cooled Chassis\nLiquid Cooled Chassis\nEnclosure Cooling Products\nHSC (Heat Sink Coolers)\nHPC (Heat Pipe Coolers)\nTEC (Thermoeletric Coolers)\nVCC (Vapor Compression Coolers)\nEnclosure Cooling Selection Tool\nHVAC Energy Recovery\nAAHX\nWAHX\nSpace Thermal Control\nConstant Conductance Heat Pipes\nVariable Conductance Heat Pipes\nSpace Copper-Water Heat Pipes\nLoop Heat Pipes\nSpace VPX\nLiquid Cooling\nEngineering Services\nResearch & Development\nTeam & Value Add\nEmerging Technology\nTechnical Papers\nOther Research Interests\nProduct Development\nSpace Thermal & Structural Analysis\nManufacturing\nLifecycle Management\nIndustries\nEnergy\nSpace\nHVAC Energy Recovery\nDefense\nMedical\nData Centers\nOther\nResources\nBlog\nCalculators & Selection Tools\nAAHX Selection Tool\nEnclosure Cooling Selection Tool\nHeat Pipe Calculator\nPCM Calculator\nWAHX Selection Tool\nPublications\nPublished Articles\nPatents\nTechnical Papers\nLearning Center\nHeat Pipe Learning Center\nPumped Two-Phase Learning Center\nPCM Learning Center\nHVAC Learning Center\nVideos\neBooks\nBrochures\nCase Studies\nWebinars\nFind your Rep\nShop\nAbout\nCareers\nEvents\nNews\nSustainability\nACT Leadership\nContact\nThermal Solutions\nPassive Thermal Solutions\nHeat Pipes\nHiK Plates­™/ Heat Pipe Assemblies\nPulsating Heat Pipes\nVapor Chambers\nHigh Temperature Heat Pipes\nLoop Thermosyphons\nPhase Change Based Solutions\nPCM Heat Sinks\nCustom Cold Plates\nActive Thermal Management Solutions\nLiquid Cooling\nPumped Two-Phase\nLiquid-Air HX\nTekgard® ECUs\nVaphtek™ ECU\nTekgard® Chillers\nEmbedded Computing Solutions\nICE-Lok®\nVME/ VPX Card Frames\nConduction Cooled Chassis\nLiquid Cooled Chassis\nEnclosure Cooling Products\nHSC (Heat Sink Coolers)\nHPC (Heat Pipe Coolers)\nTEC (Thermoeletric Coolers)\nVCC (Vapor Compression Coolers)\nEnclosure Cooling Selection Tool\nHVAC Energy Recovery\nAAHX\nWAHX\nSpace Thermal Control\nConstant Conductance Heat Pipes\nVariable Conductance Heat Pipes\nSpace Copper-Water Heat Pipes\nLoop Heat Pipes\nSpace VPX\nLiquid Cooling\nEngineering Services\nResearch & Development\nTeam & Value Add\nEmerging Technology\nTechnical Papers\nOther Research Interests\nProduct Development\nSpace Thermal & Structural Analysis\nManufacturing\nLifecycle Management\nIndustries\nEnergy\nSpace\nHVAC Energy Recovery\nDefense\nMedical\nData Centers\nOther\nResources\nBlog\nCalculators & Selection Tools\nAAHX Selection Tool\nEnclosure Cooling Selection Tool\nHeat Pipe Calculator\nPCM Calculator\nWAHX Selection Tool\nPublications\nPublished Articles\nPatents\nTechnical Papers\nLearning Center\nHeat Pipe Learning Center\nPumped Two-Phase Learning Center\nPCM Learning Center\nHVAC Learning Center\nVideos\neBooks\nBrochures\nCase Studies\nWebinars\nFind your Rep\nShop\nAbout\nCareers\nEvents\nNews\nSustainability\nACT Leadership\nContact\nReliable Thermal Management Solutions\nYour Trusted Partner for\nThermal Management Since 2003\nView Our Thermal Solutions\nShop Products Online\nResearch & Development\nDedicated to developing cutting edge technologies.\nLet’s Innovate\nProduct\nDevelopment\nSolving your challenge with proven products, custom-engineered for your application.\nGet Product Development\nQuality\nManufacturing\nFrom prototype to production, we’re dedicated to excellence.\nSee Our Capabilities\nPost-Delivery\nService\nExpanding your ROI with spare parts, return & repair and field servicing.\nEngineering Services\nExplore Advanced Cooling Technologies\nACT has an intensive selection of resources from blogs to latest engineering projects.\nIndustries\nLearn about the industries we serve with innovative thermal management.\nView Industry Solutions\nNews\nFind out what we’re working on.\nExplore Latest News\nBlogs\nACT engineers share insight on trending thermal topics\nRead Latest Insights\nFree Calculators & Selection Tools\nInteractive tools built to guide you to the right solution\nUse Free Tools\nAbout Us\nOur Mission is to help solve our customers’\nmost challenging\nthermal management problems with the best\nvalue engineered\nproducts and the most\ninnovative\ntechnologies through a highly\nengaged workforce\n.\nInnovation | Teamwork | Customer Care\nLearn More About ACT\nJoin our team\nYour Complete Thermal MANAGEMENT Solutions Provider\nAny application, any point in the design. Our\nthermal management company is here to support.\nExplore Technical Services\nView Industries Served\nWhy CHOOSE OUR THERMAL MANAGEMENT SOLUTIONS?\n“I would not hesitate to recommend Paul and the ACT team to anyone, and I have, actually, recommended them to others within BlueHalo already. Everyone at ACT has been extremely easy to work with, and they all strive to fully understand and meet our project needs. Paul is one of the hardest working engineers I have met in my career. He thoughtfully listens to each of our concerns or questions and either articulates an educated answer or gets back to us as soon as he does have an answer. My visit to your facility in October was short but impactful. I was impressed with your organization and floor layout and production flow.”\n“Professional attitude, cutting edge thermal system design capabilities, accommodating to many of the schedule and budget challenges on this particular program.”\n“ACT is very professional and very transparent. They know about their product and always help us when we need.”\n“Our cooperation with Advanced Cooling Technologies opens up exciting new avenues for cooperation and market expansion. The efficient realization, vast experience of Advanced Cooling Technologies, and commitment to delivering the product on time allowed us to provide the solution to the customer promptly.”\n* McKenzie was very helpful and easy to work with.\n* He completed our scope of work in the 40 hrs allotted to him in a 2 week window\n* He reviewed the results for our team and provided his assessment and some suggestions to make our system better\n* He was very knowledgeable\n“The ACT engineer I worked with completed the work quickly and exactly as we were hoping. Despite the several years that had passed since the prior work was performed on this design, he was able to quickly pick it back up and complete the follow-on work. He listened well and acted on all our requests efficiently. It was a very good experience.”\n“Super support by the ACT sales team and all other colleagues! Highest quality! Open communication!”\n“Good crew of people working at this company, very willing to work with customers closely and receptive to suggestions for getting great product.”\n“The support the team at ACT gives Fairlead represents the best level of support that I have experienced in my career. The level of support goes beyond the normal customer/supplier relationship, and I truly feel I have a partner on my project.”\nExcellent subject matter knowledge, and enthusiasm for the work. Great collaboration and communication. Tim Hahn was terrific to work with. He cares deeply about the work and really hung in there throughout the entire thermal control system design evolution and made some excellent contributions in developing a practical design solution. I look forward to working with Tim again in the future.\n“The people from ACT that assisted us with our project were very knowledgeable, professional, friendly and eager to help.”\n“There are a few individuals that stand out to me. Zachary Walter for his willingness to work with our ever-changing priorities and his responsiveness when we have urgent matters. Deniz Pumukcu for quick turnarounds on the many quotes we asked for this year. Dan Reist for his technical knowledge and his ability to provide us with background and history of the HESC product. Scott Garner and Devin Pellicone for going above and beyond to help develop solutions to our pump obsolescence issue.”\n“It has been a delight to work with ACT. Their team of experts is not only proficient in their domain but also committed to delivering high-quality support. They listened to our specific requirements and crafted a customized solution that surpassed our expectations.” – Engineer\nAdvanced Cooling Technologies, Inc.\n1046 New Holland Avenue\nLancaster, Pennsylvania  17601, USA\n(717) 295-6061\nContact Our Experts\nlinkedin\nyoutube\ntwitter\nfacebook\nshop products online\nsitemap\nprivacy policy\nterms & conditions\nISO9001 & AS9100 CERTIFIED, ITAR REGISTERED\nCopyright 2024. All rights reserved."
+    # Add more documents as needed
+]
+
+# Perform summarization using parallel processing
+summaries = parallel_summarize(texts, num_sentences=10, batch_size=2, n_process=4)
+
+# Print summaries for each document
+for idx, summary in enumerate(summaries):
+    print(f"Summary {idx + 1}:\n{summary}\n")

@@ -42,7 +42,7 @@ def ingest():
     make_sure_path_exists("./.whoosh")
     ix = create_in("./.whoosh", schema)
     writer = ix.writer()
-    pbar = get_file_pbar()
+    pbar = get_file_pbar(no_of_files=-1)
     for filename, page_segments in pbar:
         pbar.set_description(f"Ingesting {filename} with {len(page_segments)} page segments")
         for page in page_segments:
