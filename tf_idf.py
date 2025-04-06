@@ -11,7 +11,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
 
-from ingestor import get_files
+from ingestor import get_file_pbar
 
 schema = Schema(
     url=ID(stored=True),
@@ -42,13 +42,13 @@ def ingest():
     make_sure_path_exists("./.whoosh")
     ix = create_in("./.whoosh", schema)
     writer = ix.writer()
-    for filename, page_segments in get_files():
-        print(f"Ingesting {filename} with {len(page_segments)} page segments...")
+    pbar = get_file_pbar()
+    for filename, page_segments in pbar:
+        pbar.set_description(f"Ingesting {filename} with {len(page_segments)} page segments")
         for page in page_segments:
             content = page['text']
             url = page['url']
             writer.add_document(url=url, file=filename, content=content)
-        print(f"Ingested {filename}.")
     writer.commit()
 
 

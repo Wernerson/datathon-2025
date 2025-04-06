@@ -7,9 +7,12 @@ from collections import OrderedDict
 import os
 from multiprocessing import Pool
 
-from vector_ingest import segment_pages
-from vector_ingest import load_documents
-from vector_ingest import load_files
+from ingestor import segment_pages
+from ingestor import load_document
+from ingestor import load_files
+
+import torch
+import torch.nn.functional as F
 
 
 
@@ -20,7 +23,7 @@ def save_json_data(data, file_path):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def dedupe_json_values(data, new_file_path, window_size=500,shift_size=250, threshold=0.9):
+def dedupe_json_values(data, new_file_path, window_size=500,shift_size=250, threshold=0.9,shingle_size=5):
     """
     Main processing function:
     1. Loads JSON dictionary from file
@@ -34,7 +37,7 @@ def dedupe_json_values(data, new_file_path, window_size=500,shift_size=250, thre
 
     # Process the data
     clean_start = time.time()
-    cleaned_data_dict = dedupe_dict_values(data_dict, window_size,shift_size, threshold)
+    cleaned_data_dict = dedupe_dict_values(data_dict, window_size,shift_size, threshold,shingle_size)
     clean_end = time.time()
     print(f"clean time: {clean_end - clean_start}")
     data['text_by_page_url'] = cleaned_data_dict
@@ -43,7 +46,7 @@ def dedupe_json_values(data, new_file_path, window_size=500,shift_size=250, thre
     print(f"Successfully processed and saved to {new_file_path}")
 
 
-def dedupe_dict_values(data_dict, window_size=500, shift_size=250, threshold=0.9):
+def dedupe_dict_values(data_dict, window_size=500, shift_size=250, threshold=0.9,shingle_size=5):
     """
     Processes a dictionary to remove duplicate sequences across all values.
     Returns a new dictionary with duplicates removed from values.
@@ -56,7 +59,8 @@ def dedupe_dict_values(data_dict, window_size=500, shift_size=250, threshold=0.9
         data_dict=data_dict,
         window_size=window_size,
         shift_size=shift_size,
-        threshold=threshold
+        threshold=threshold,
+        shingle_size=shingle_size
     )
 
     # Rebuild dictionary with duplicates removed
@@ -84,9 +88,13 @@ def dedupe_dict_values(data_dict, window_size=500, shift_size=250, threshold=0.9
 
 
 def _remove_batch_duplicates(windows,duplicates,lsh,window_size):
+    # seen_hashes = set()
+
     for window_key, values in windows.items():
         duplicates[window_key] = []
         for pos, mh in values:
+            # mh_hash = str(mh.hashvalues.tolist())
+            # if mh_hash in seen_hashes:
             matches = lsh.query(mh)
             if len(matches) > 1:
                 for key_match_pos in matches:
@@ -105,13 +113,15 @@ def _remove_batch_duplicates(windows,duplicates,lsh,window_size):
                         if (start, end) not in duplicates[window_key]:
                             duplicates[window_key].append((start, end))
 
-                        # Sort immediately after collection
-                    duplicates[window_key].sort(key=lambda x: x[0])
+        # Sort immediately after collection
+        duplicates[window_key].sort(key=lambda x: x[0])
+            # else:
+            #     seen_hashes.add(mh_hash)
 
 
-def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
+def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold,shingle_size):
     """Identifies duplicate windows across entire text"""
-    lsh = MinHashLSH(threshold=threshold, num_perm=128)
+    lsh = MinHashLSH(threshold=threshold, num_perm=64)
     windows = {}
 
     duplicates = {}
@@ -125,11 +135,11 @@ def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
         new_text = ""
         for i in range(0, len(text) - window_size + 1, shift_size):
             window = text[i:i + window_size]
-            mh = MinHash(num_perm=128)
+            mh = MinHash(num_perm=64)
 
             # Process each shingle
-            for j in range(0, len(window) - 5 + 1):
-                shingle = window[j:j + 5]
+            for j in range(0, len(window) - shingle_size + 1):
+                shingle = window[j:j + shingle_size]
                 # Convert to bytes and hash
                 mh.update(shingle.encode('utf-8'))  # Directly pass bytes
 
@@ -151,12 +161,10 @@ def _find_cross_value_duplicates(data_dict, window_size,shift_size, threshold):
 
 
 def _rebuild_dict(original_dict, duplicates_dict):
-    new_dict = {}
 
     for key, text in original_dict.items():
         # print(key)
         if not duplicates_dict.get(key):
-            new_dict[key] = original_dict[key]
             continue
 
         # Build list of keep ranges (inverse of duplicates)
@@ -181,42 +189,46 @@ def _rebuild_dict(original_dict, duplicates_dict):
         #     clean_text = clean_text.join(text[start:end])
 
         clean_text = ''.join(text[start:end] for start, end in keep_ranges)
-        new_dict[key]=clean_text
-    return new_dict
+        original_dict[key]=clean_text
+    return original_dict
 
 
 def process_file(args):
     filename, orig_file_path, new_file_path = args
     if filename.endswith('.json'):
         file_path = os.path.join(orig_file_path, filename)
-        doc = load_documents(file_path)
+        doc = load_document(file_path)
         dedupe_json_values(
             data=doc,
             new_file_path=f"{new_file_path}/{filename}",
-            window_size=100,
-            shift_size=50,
-            threshold=0.8
+            window_size=200,
+            shift_size=100,
+            threshold=0.8,
+            shingle_size=11
         )
 
 
 
 def main(parallel=False):
 
-    orig_file_path = "./../data/hackathon_data"
+    orig_file_path = "./../data/hackathon_data_reduced"
     # orig_file_path = "./../data/test_data"
-    new_file_path = "./../data/rd_data"
+    new_file_path = "./../data/removed_duplicates/rd_data"
 
     files_in_folder = load_files(orig_file_path)
     if parallel:
         with Pool() as pool:
-            args = [(filename, orig_file_path, new_file_path) for filename in files_in_folder[:10]]
+            args = [(filename, orig_file_path, new_file_path) for filename in files_in_folder[:100]]
             pool.map(process_file, args)
     else:
-        for file_index, filename in enumerate(files_in_folder[:2]):
+        for file_index, filename in enumerate(files_in_folder[:5]):
             print(f"Processing {filename}...")
             args = (filename,orig_file_path,new_file_path)
             process_file(args)
 
 
 if __name__ == "__main__":
+    full_start = time.time()
     main(parallel=True)
+    full_end = time.time()
+    print(f"runtime: {full_end-full_start}")
