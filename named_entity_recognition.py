@@ -60,6 +60,8 @@ def get_relevant_docs_ner(query, n_results=5):
     for ent in doc.ents:
         if ent.label_ in RELEVANT_ENTITIES:
             clauses.append((ent.label_, ent.text))
+    if not clauses:
+        return []
     clauses = " OR ".join([f"(type = '{type}' AND name = '{ent}')" for type, ent in clauses])
     sql_query = f"""
         SELECT filename, url FROM
