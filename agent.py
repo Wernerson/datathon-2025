@@ -48,10 +48,14 @@ def is_valid_answer(answer, prompt, client):
         return False
 
 
-def prompt_agent(user_query, strict_reg=True, conversation_history = ""):
+def prompt_agent(user_query, strict_reg=True, use_vector: bool = True, use_tfidf: bool = True, use_ner: bool = False,
+        strict: bool = False,
+        conversation: list[str] = []):
     api_key = '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'
 
     client = OpenAI(api_key=api_key)
+
+    conversation_history = "\n".join(conversation)
 
     #print("querying db")
     #TODO: rewrite querry dependent on the conversation history
