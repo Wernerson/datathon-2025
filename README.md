@@ -8,6 +8,8 @@
 
 `pip install -r ./requirements.txt`
 
+You might need to adjust the versions for your system (looking at you torch/cuda! (👁ˋ _ ˊ 👁))
+
 ## How to import data
 
 - Vector DB
