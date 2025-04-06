@@ -42,7 +42,9 @@ def query(query):
         text = document["text_by_page_url"][url]
         context.append(f"Excerpt from {url}:\n{text}")
 
-    print(len(context))
+    return context
+
+    # print(len(context))
     # response = client.responses.create(
     #     model="gpt-4o-mini",
     #     instructions="\n".join(context) + "\n" + INSTRUCTIONS,
